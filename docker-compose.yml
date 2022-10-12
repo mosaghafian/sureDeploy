@@ -36,7 +36,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: sasaCompany
       MONGO_INITDB_ROOT_PASSWORD: Parvardegar1
     ports:
-      - 27017:27017
+      - 2717:27017
     volumes:
       - mongodb_data_container:/data/db
       

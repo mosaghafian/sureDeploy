@@ -243,19 +243,22 @@ class Chats{
         }
     }
     
-    func sendMessage(_ msg: Message, _ col: MongoCollection, _ colMSG: MongoCollection, _ colUsr: MongoCollection) async {
+    func sendMessage(_ msg: Message, _ colCHT: MongoCollection, _ colMSG: MongoCollection, _ colUsr: MongoCollection) async {
        // let start = CFAbsoluteTimeGetCurrent()
         // run your work
         Task(priority: .medium) {
             do{
                 let receiverSocket = connectedUser[msg.receiverID]
                 if let socket = receiverSocket{
-                    print("Sending this message \(msg)")
+                    
                     let data =  try JSONEncoder().encode(msg);
                     if(socket.isClosed){
                         connectedUser.removeValue(forKey: msg.receiverID)
                     }
-                    var chat = try await col.findOne(["contact1": msg.authorID, "contact2": msg.receiverID], as: Chat.self);
+                    /*
+                     Is is the first combination
+                     */
+                    var chat = try await colCHT.findOne(["contact1": msg.authorID, "contact2": msg.receiverID], as: Chat.self);
                     let msgDoc = try BSONEncoder().encode(msg)
                     //print("UNDER MSGDOC")
                     if chat != nil{
@@ -269,7 +272,10 @@ class Chats{
                         }
                         return;
                     }
-                    chat = try await col.findOne(["contact1": msg.receiverID, "contact2": msg.authorID],as: Chat.self);
+                    /*
+                     Is it the second combination
+                     */
+                    chat = try await colCHT.findOne(["contact1": msg.receiverID, "contact2": msg.authorID],as: Chat.self);
                     if chat != nil{
                         try await colMSG.updateOne(where: "id" == chat?.messagesID, to: [
                             "$push": [
@@ -281,22 +287,25 @@ class Chats{
                         }
                         return;
                     }
-                    
-                    
+                    /*
+                     There is no chat
+                     */
                     let newChat = Chat(id: UUID().uuidString, numOfContacts: 2, contact1: msg.authorID, contact2: msg.receiverID, messagesID: UUID().uuidString)
                     let docNewChat = try BSONEncoder().encode(newChat)
-                    try await col.insert(docNewChat)
+                    try await colCHT.insert(docNewChat)
                     let newChatMessages = ChatMessages(id: newChat.messagesID!, messages: [msgDoc])
                     let docChatMessages = try BSONEncoder().encode(newChatMessages)
                     try await colMSG.insert(docChatMessages)
                     
-                    let res = try await colUsr.updateOne(where: "username" == newChat.contact1, to: [
+                    print("socket, contact1: \(newChat.contact1)")
+                    try await colUsr.updateOne(where: "id" == newChat.contact1, to: [
                         "$push": [
                             "chats":  newChat.id
                         ]
                     ])
-                    print("\(res)")
-                    try await colUsr.updateOne(where: "username" == newChat.contact2, to: [
+                    
+                    print("socket, contact2: \(newChat.contact2)")
+                    try await colUsr.updateOne(where: "id" == newChat.contact2, to: [
                         "$push": [
                             "chats": newChat.id
                         ]
@@ -304,11 +313,9 @@ class Chats{
                     if(!socket.isClosed){
                         try await socket.send(raw: data, opcode: WebSocketOpcode.binary);
                     }
+                    Logger(label: "There is a socket").info("There is no chat but the socket is open")
                 }else{
-                    
-                        
-                        print("contact1: \(msg.authorID), contact2: \(msg.receiverID)")
-                        var chat = try await col.findOne(["contact1": msg.authorID, "contact2": msg.receiverID], as: Chat.self);
+                        var chat = try await colCHT.findOne(["contact1": msg.authorID, "contact2": msg.receiverID], as: Chat.self);
                         let msgDoc = try BSONEncoder().encode(msg)
                         if chat != nil{
                             try await colMSG.updateOne(where: "id" == chat?.messagesID, to: [
@@ -316,11 +323,10 @@ class Chats{
                                     "messages": msgDoc
                                 ]
                             ])
-                            print("return 1")
                             
                             return;
                         }
-                        chat = try await col.findOne(["contact1": msg.receiverID, "contact2": msg.authorID],as: Chat.self);
+                        chat = try await colCHT.findOne(["contact1": msg.receiverID, "contact2": msg.authorID],as: Chat.self);
                         
                         if chat != nil{
                             try await colMSG.updateOne(where: "id" == chat?.messagesID, to: [
@@ -332,27 +338,26 @@ class Chats{
                         }
                         let newChat = Chat(id: UUID().uuidString, numOfContacts: 2, contact1: msg.authorID, contact2: msg.receiverID, messagesID: UUID().uuidString)
                         let docNewChat = try BSONEncoder().encode(newChat)
-                        try await col.insert(docNewChat)
+                        try await colCHT.insert(docNewChat)
                         let newChatMessages = ChatMessages(id: newChat.messagesID!, messages: [msgDoc])
                         let docChatMessages = try BSONEncoder().encode(newChatMessages)
                         try await colMSG.insert(docChatMessages)
-                        
-                        let res = try await colUsr.updateOne(where: "id" == newChat.contact1, to: [
+                        print("no socket, contact1: \(newChat.contact1)")
+                        try await colUsr.updateOne(where: "id" == newChat.contact1, to: [
                             "$push": [
                                 "chats":  newChat.id
                             ]
                         ])
-                        print("\(res)")
+                    
+                        print("no socket, contact1: \(newChat.contact2)")
                         try await colUsr.updateOne(where: "id" == newChat.contact2, to: [
                             "$push": [
                                 "chats": newChat.id
                             ]
                         ])
-                        print("\(res)")
-                        
                         Logger(label: "sendingMessage").info("Failed to send a live message, no receiver id found")
                     }
-                
+                Logger(label: "There is no socket").info("There is no chat but socket closed")
             }catch{
                 Logger(label: "sendingMessage").warning("Catch block of sending a message \(error)")
             }

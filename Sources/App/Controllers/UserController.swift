@@ -29,7 +29,7 @@ class UserController{
     }
     static func userExists(_ route: RoutesBuilder){
         route.get(":username") { req async -> Response in
-            let username : String = req.parameters.get("username")!
+            let username : String = req.parameters.get("username")!.lowercased()
             let col = req.mongoDB["user"]
             do{
                 let userDoc : Document? = try await col.findOne(["username":username])

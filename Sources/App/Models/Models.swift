@@ -34,8 +34,9 @@ public struct Message: Codable, Primitive, Content{
     var text: String
     var authorID: String
     var receiverID: String
+    var firstName: String?
+    var lastName: String?
 }
-
 struct Chat: Content, Primitive, Codable{
     let id: String
     var numOfContacts: Int
