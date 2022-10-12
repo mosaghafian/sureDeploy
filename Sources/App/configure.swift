@@ -10,9 +10,9 @@ public func configure(_ app: Application) throws  {
     
         do {
             try app.initializeMongoDB(connectionString: "mongodb://localhost:2717/sure")
-            try routes(app)
+            
         } catch  {
             Logger(label: "MongoDB Error").error("Failed to connect mongoDB")
         }
-    
+    try routes(app)
 }

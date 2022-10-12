@@ -62,6 +62,7 @@ class ReadingController {
                 let count = try await req.mongoDB["quote"].count()
                 return count
             }catch{
+                Logger(label: "getNumQuotes").error("\(error)")
                 return 0
             }
         }

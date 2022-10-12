@@ -114,15 +114,18 @@ class Chats{
                 
                 
                 var update : Update = Update(id: UUID().uuidString, date: .now, chatMessages: [], groupMessages: [])
-                
-                var decodedUser = try BSONDecoder().decode(User.self, from: userDoc!)
+                var decodedUser: User
+                if let userDoc = userDoc{
+                     decodedUser = try BSONDecoder().decode(User.self, from: userDoc)
+                }else{
+                    try await ws.send("User not found!")
+                    return
+                }
+            
                 
                 if let userDoc = userDoc {
                     
                     
-                    let encodedUser = try JSONEncoder().encode(decodedUser)
-                    
-                    try await ws.send(raw: encodedUser, opcode: .binary)
                     if let chats = decodedUser.chats{
                         for chat in chats{
                             let chatObject : Document = try await colCht.findOne("id" == chat)!

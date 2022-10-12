@@ -14,7 +14,7 @@ import Meow
 class UserController{
     static func routes(_ app: Application){
         app.group("user"){ route in
-            print("hello")
+            
             userExists(route)
             signUpUser(route)
             deleteUser(route)
