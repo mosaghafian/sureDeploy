@@ -43,7 +43,7 @@ class GroupController{
                         for member in gr.members{
                             var user : User = try await colUser.findOne(["username": member],as: User.self)!
                             
-                            user.groups.append(gr.id)
+                            user.groups?.append(gr.id)
                             let docUser : Document = try BSONEncoder().encode(user)
                             try await colUser.updateOne(where: ["username" : user.id], to: docUser)
                         }

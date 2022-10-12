@@ -14,9 +14,17 @@ import Meow
 class UserController{
     static func routes(_ app: Application){
         app.group("user"){ route in
+            print("hello")
             userExists(route)
             signUpUser(route)
             deleteUser(route)
+            sayHello(route)
+        }
+    }
+    
+    static func sayHello(_ route: RoutesBuilder){
+        route.get("") { req -> String in
+                return "hello"
         }
     }
     static func userExists(_ route: RoutesBuilder){
@@ -49,6 +57,7 @@ class UserController{
     static func signUpUser(_ route: RoutesBuilder){
         
         route.post { req async -> Response in
+            Logger(label: "SignUpUser").info("Post Request sign up user")
             let col = req.mongoDB["user"]
             
             do{

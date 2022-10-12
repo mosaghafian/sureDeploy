@@ -10,7 +10,7 @@ func routes(_ app: Application) throws {
         "Hello, world!"
     }
     app.get("") { req in
-        "Welcome to SURE."
+        "Welcome to SURE. "
     }
     
     DiscussionController.routes(app)

@@ -17,16 +17,17 @@ class ChatController {
         chat(app)
     }
     static func chat(_ app: Application){
-        app.webSocket("chat", ":username") { req, ws async in
+        app.webSocket("chat", ":userID") { req, ws async in
             
-            let username: String = req.parameters.get("username")!
+            let userID: String = req.parameters.get("userID")!
         
-            Logger(label: "NewConnection").info("User connected: \(username) ")
+            Logger(label: "NewConnection").info("User connected: \(userID) ")
             //
             
-            Chats.shared.addNewConnection((username, ws))
+            Chats.shared.addNewConnection((userID, ws))
+            Chats.shared.updateUser(userID, req, ws)
             
-            Chats.shared.updateUser(username, req)
+            
             ws.onBinary { ws, data async in
                 do{
                     let message = try JSONDecoder().decode(Message.self, from: data)
@@ -43,19 +44,18 @@ class ChatController {
                     }
                     
                 }catch{
-                    print("Error json decoding for data coming from \(username)")
                     Logger(label: "Chat").error("\(error)")
                 }
             }
-            do{
-               // try await ws.send("Hello to sasa")
-                let data = try JSONEncoder().encode(Message(id: UUID().uuidString, date: Date(), group: false, text: "Binary data", authorID: "test1", receiverID: "test1"))
-                
-                try await ws.send(raw: data, opcode: .binary)
-                try await ws.send("This is a text")
-            }catch{
-                print("\(error)")
-            }
+//            do{
+//               // try await ws.send("Hello to sasa")
+//                let data = try JSONEncoder().encode(Message(id: UUID().uuidString, date: Date(), group: false, text: "Binary data", authorID: "test1", receiverID: "test1"))
+//
+//                try await ws.send(raw: data, opcode: .binary)
+//                try await ws.send("This is a text")
+//            }catch{
+//                Logger(label: ".onBinary").error("\(error)")
+//            }
             
             ws.onText { ws, text async in
                 do{
@@ -74,16 +74,16 @@ class ChatController {
                             await Chats.shared.sendMessage(message, col, colMSG, colUsr)
                         }
                     }catch{
-                        print("Error json decoding for data coming from \(username)")
+                        Logger(label: "On Text").error("On Text, first catch: \(error)")
                     }
                 }catch{
-                    print("Error json decoding from \(username)")
-                    print("\(error)")
+                    
+                    Logger(label: "On Text").error("On Text, catch: \(error)")
                 }
             }
             
             ws.onPing { ws in
-                print("On ping for user \(username)")
+                print("On ping for user \(userID)")
             }
             
             
@@ -96,8 +96,10 @@ class Chats{
     
     var connectedUser: [String: WebSocket] = [:]
     
-    
-    func updateUser(_ username: String, _ req: Request){
+    /**
+    Important: This funciton needs to be optimized
+     */
+    func updateUser(_ userID: String, _ req: Request, _ ws: WebSocket){
         Task(priority: .high){
             do{
                 // Creating objects to access each collection
@@ -106,12 +108,89 @@ class Chats{
                 let colGrpMSG = req.mongoDB["groupMessage"]
                 let colCht = req.mongoDB["chat"]
                 let colChtMSG = req.mongoDB["chatMessage"]
-                let user = try await colUsr.findOne("username" == username)
+                
+                let userDoc = try await colUsr.findOne("id" == userID)
                 
                 
+                
+                var update : Update = Update(id: UUID().uuidString, date: .now, chatMessages: [], groupMessages: [])
+                
+                var decodedUser = try BSONDecoder().decode(User.self, from: userDoc!)
+                
+                if let userDoc = userDoc {
+                    
+                    
+                    let encodedUser = try JSONEncoder().encode(decodedUser)
+                    
+                    try await ws.send(raw: encodedUser, opcode: .binary)
+                    if let chats = decodedUser.chats{
+                        for chat in chats{
+                            let chatObject : Document = try await colCht.findOne("id" == chat)!
+                            let decodedChat: Chat = try BSONDecoder().decode(Chat.self, from: chatObject)
+                            
+                            let chatMSGDoc: Document = try await colChtMSG.findOne("id" == decodedChat.messagesID)!
+                            
+                            
+                            let decodedMSGS: ChatMessages = try BSONDecoder().decode(ChatMessages.self, from: chatMSGDoc)
+                            /**
+                             Huge optimization can happen here because the query, queries every single messages ever
+                            This has to do with my inability to just query messages that after certain date stamp
+                             */
+                            for message in decodedMSGS.messages{
+                                let decodedMSG = try BSONDecoder().decode(Message.self, from: message)
+                                if decodedMSG.date > decodedUser.lastOnline{
+                                    update.chatMessages.append(decodedMSG)
+                                }
+                            }
+
+                        }
+                    }
+                    if let groups = decodedUser.groups{
+                        for group in groups{
+                            let groupMessages : Document = try await colCht.findOne("id" == group)!
+                            
+                            let decodedGroup = try BSONDecoder().decode(Group.self, from: groupMessages)
+                            
+                            let groupMSGDoc: Document = try await colChtMSG.findOne("id" == decodedGroup.messagesID)!
+                            
+                            let decodedMSGS: ChatMessages = try BSONDecoder().decode(ChatMessages.self, from: groupMSGDoc)
+                            
+                            for message in decodedMSGS.messages{
+                                let decodedMSG = try BSONDecoder().decode(Message.self, from: message)
+                                if decodedMSG.date > decodedUser.lastOnline{
+                                    update.groupMessages.append(decodedMSG)
+                                }
+                            }
+                            
+                            
+                        }
+                    }
+                        
+                    
+                }else{
+                    Logger(label: "updateUser").error("Error finding a user, found nil")
+                }
+                
+                let encodedUpdate = try JSONEncoder().encode(update)
+                
+                if (!ws.isClosed){
+                    //try await ws.send(raw: encodedUpdate, opcode: .binary)
+                    try await ws.send(raw: encodedUpdate, opcode: .binary)
+                }
+                
+                decodedUser.lastOnline = Date.now
+                
+                
+                
+                
+                try await colUsr.updateOne(where: "id" == decodedUser.id, to: [
+                    "$set":[
+                        "lastOnline": Date.now
+                    ]
+                ])
                 
             }catch{
-                Logger(label: "updateUser").log(level: .warning, "Failed updating the user")
+                Logger(label: "updateUser").log(level: .error, "Failed updating the user: \(error)")
             }
         }
     }
@@ -119,7 +198,6 @@ class Chats{
     
     func deleteUserWebSocket(_ username: String){
         connectedUser.removeValue(forKey: username)
-        print(connectedUser)
     }
     
     func sendMessageGroup(_ message: Message, _ col: MongoCollection, _ colMSG: MongoCollection )async{

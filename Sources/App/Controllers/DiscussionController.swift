@@ -17,7 +17,6 @@ class DiscussionController{
             getADiscussion(route)
             postDiscussion(route)
             get20Discussion(route)
-            getADiscussion(route)
             deleteDiscussion(route)
         }
         

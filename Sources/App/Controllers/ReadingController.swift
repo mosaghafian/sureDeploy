@@ -29,21 +29,16 @@ class ReadingController {
                 let listOfQuote = try await col.find().limit(20).drain()
                 
                 let list = try await AggregateBuilderPipeline(stages: [Sample(20)], collection: col).drain()
-                
-                
-                
-                
-                
                 var returnList : [Quote] = []
-                
+                print("\(list)")
                 for quote in listOfQuote{
                     returnList.append(try BSONDecoder().decode(Quote.self, from: quote))
                     
                 }
-                return listOfQuote
+                return list
             }catch{
-                
-                return []
+                Logger(label: "get20QUotes").error("get20Quotes: \(error)")
+                return [["hello": "hello"]]
             }
         }
     }

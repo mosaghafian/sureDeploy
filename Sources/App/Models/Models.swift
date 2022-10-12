@@ -10,13 +10,21 @@ import MongoKitten
 import Meow
 import BSON
 
+
+public struct Update: Content, Primitive, Codable{
+    let id: String
+    let date: Date
+    var chatMessages: [Message]
+    var groupMessages: [Message]
+}
+
 public struct User: Content, Primitive, Codable{
     let id: String
     var username: String
     var phoneNumber: String?
     var lastOnline: Date
-    var chats: [String]
-    var groups: [String]
+    var chats: [String]?
+    var groups: [String]?
 }
 
 public struct Message: Codable, Primitive, Content{
