@@ -59,6 +59,10 @@ class ChatController {
             
             ws.onText { ws, text async in
                 do{
+                    if text == "Hello"{
+                        print("Received hello")
+                        return
+                    }
                     let message = try JSONDecoder().decode(Message.self, from: text.data(using: .utf8)!)
                     do{
                         if(message.group){
@@ -84,6 +88,7 @@ class ChatController {
             
             ws.onPing { ws in
                 print("On ping for user \(userID)")
+                ws.sendPing()
             }
             
             

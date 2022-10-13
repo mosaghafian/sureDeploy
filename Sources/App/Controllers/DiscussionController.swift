@@ -31,7 +31,7 @@ class DiscussionController{
                 for document in listOfDis{
                     returnList.append(try BSONDecoder().decode(DiscussionModel.self, from: document))
                 }
-                print("returnr")
+                print("returnr  ")
                 return returnList
             }catch{
                 print("Error")
