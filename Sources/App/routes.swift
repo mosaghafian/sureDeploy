@@ -42,12 +42,16 @@ func routes(_ app: Application) throws {
 //            return Response(status: .badRequest)
 //        }
 //    }
-//    
+//
+    /**
+     Different routes for different services
+     */
     DiscussionController.routes(app)
     ReadingController.routes(app)
     ChatController.routes(app)
     UserController.routes(app)
     CommentController.routes(app)
     GroupController.routes(app)
+    ConnectionController.routes(app)
     
 }

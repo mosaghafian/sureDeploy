@@ -118,7 +118,7 @@ class Chats{
                 
                 
                 
-                var update : Update = Update(id: UUID().uuidString, date: .now, chatMessages: [], groupMessages: [])
+                var update : Update = Update(id: UUID().uuidString, date: Date(), chatMessages: [], groupMessages: [])
                 var decodedUser: User
                 if let userDoc = userDoc{
                      decodedUser = try BSONDecoder().decode(User.self, from: userDoc)
@@ -186,16 +186,16 @@ class Chats{
                     try await ws.send(raw: encodedUpdate, opcode: .binary)
                 }
                 
-                decodedUser.lastOnline = Date.now
+                decodedUser.lastOnline = Date()
                 
                 
                 
                 
                 try await colUsr.updateOne(where: "id" == decodedUser.id, to: [
                     "$set":[
-                        "lastOnline": Date.now
-                    ]
-                ])
+                        "lastOnline": Date()
+                    ]as Document
+                ] as Document)
                 
             }catch{
                 Logger(label: "updateUser").log(level: .error, "Failed updating the user: \(error)")
@@ -217,8 +217,9 @@ class Chats{
                                         [
                                             "$push":[
                                                 "messages": msgDoc
-                                            ]
-                                        ])
+                                            ] as Document
+                                        ] as Document
+            )
             
             for member in group.members{
                 
@@ -270,8 +271,9 @@ class Chats{
                         try await colMSG.updateOne(where: "id" == chat?.messagesID, to: [
                             "$push": [
                                 "messages": msgDoc
-                            ]
-                        ])
+                            ] as Document
+                        ] as Document
+                        )
                         if(!socket.isClosed){
                             try await socket.send(raw: data, opcode: WebSocketOpcode.binary);
                         }
@@ -285,8 +287,9 @@ class Chats{
                         try await colMSG.updateOne(where: "id" == chat?.messagesID, to: [
                             "$push": [
                                 "messages": msgDoc
-                            ]
-                        ])
+                            ] as Document
+                        ] as Document
+                        )
                         if(!socket.isClosed){
                             try await socket.send(raw: data, opcode: WebSocketOpcode.binary);
                         }
@@ -306,15 +309,17 @@ class Chats{
                     try await colUsr.updateOne(where: "id" == newChat.contact1, to: [
                         "$push": [
                             "chats":  newChat.id
-                        ]
-                    ])
+                        ] as Document
+                    ] as Document
+                    )
                     
                     print("socket, contact2: \(newChat.contact2)")
                     try await colUsr.updateOne(where: "id" == newChat.contact2, to: [
                         "$push": [
                             "chats": newChat.id
-                        ]
-                    ])
+                        ]as Document
+                    ]as Document
+                    )
                     if(!socket.isClosed){
                         try await socket.send(raw: data, opcode: WebSocketOpcode.binary);
                     }
@@ -337,8 +342,8 @@ class Chats{
                             try await colMSG.updateOne(where: "id" == chat?.messagesID, to: [
                                 "$push": [
                                     "messages": msgDoc
-                                ]
-                            ])
+                                ]as Document
+                            ]as Document)
                             return;
                         }
                         let newChat = Chat(id: UUID().uuidString, numOfContacts: 2, contact1: msg.authorID, contact2: msg.receiverID, messagesID: UUID().uuidString)
@@ -351,15 +356,15 @@ class Chats{
                         try await colUsr.updateOne(where: "id" == newChat.contact1, to: [
                             "$push": [
                                 "chats":  newChat.id
-                            ]
-                        ])
+                            ]as Document
+                        ]as Document)
                     
                         print("no socket, contact1: \(newChat.contact2)")
                         try await colUsr.updateOne(where: "id" == newChat.contact2, to: [
                             "$push": [
                                 "chats": newChat.id
-                            ]
-                        ])
+                            ]as Document
+                        ]as Document)
                         Logger(label: "sendingMessage").info("Failed to send a live message, no receiver id found")
                     }
                 Logger(label: "There is no socket").info("There is no chat but socket closed")
