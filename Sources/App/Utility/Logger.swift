@@ -6,13 +6,9 @@
 //
 import Foundation
 import Vapor
-import MongoKitten
-import Meow
-import BSON
-
 
 public class Log{
     public static func info(text: String){
-        Logger(label: text).info("\(text) \(Date().ISO8601Format())")
+        Logger(label: text).info("\(text))")
     }
 }

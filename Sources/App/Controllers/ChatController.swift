@@ -184,7 +184,7 @@ class Chats{
                 
                 if (!ws.isClosed){
                     //try await ws.send(raw: encodedUpdate, opcode: .binary)
-                    Logger(label: "Update").info("sending update \(Date().ISO8601Format())")
+                    Log.info(text: "Update user \(userID)")
                     try await ws.send(raw: encodedUpdate, opcode: .binary)
                 }
                 

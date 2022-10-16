@@ -6,7 +6,7 @@ import MongoKitten
 import Meow
 
 class DBConfig{
-    static var url : String = "mongodb://sasaCompany:Parvardegar1@143.198.50.182:2717/sure"
+    static var url : String = "mongodb://sasaCompany:Parvardegar1@127.0.0.1:2717/sure"
 }
 
 func routes(_ app: Application) throws {
