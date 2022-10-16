@@ -62,7 +62,12 @@ class UserController{
             
             do{
                 let binBuf = req.body.data!
-                let user : User = try JSONDecoder().decode(User.self, from: binBuf)
+                var user : User = try JSONDecoder().decode(User.self, from: binBuf)
+                
+                user.lastOnline = Date()
+                
+                
+                
                 print("\(user.username)")
                 
                 let user1 = try await col.findOne("username" == user.username)

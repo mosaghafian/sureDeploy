@@ -22,6 +22,7 @@ class ConnectionController{
     
     static func checkConnection(_ route: RoutesBuilder){
         Task(priority: .medium){
+            Log.info(text: "Connection Checker")
             route.get { req -> Response in
                 return Response(status: .accepted)
             }

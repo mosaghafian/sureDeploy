@@ -5,6 +5,10 @@ import BSON
 import MongoKitten
 import Meow
 
+class DBConfig{
+    static var url : String = "mongodb://sasaCompany:Parvardegar1@143.198.50.182:2717/sure"
+}
+
 func routes(_ app: Application) throws {
     app.get("get") { req async -> String in
         print("received the request")
@@ -14,8 +18,9 @@ func routes(_ app: Application) throws {
     app.get("hello") { req async -> String in
         "Hello, world!"
     }
+
     app.get("") { req in
-        "Welcome to SURE. "
+        "Welcome to SURE. 1"
     }
 //    
 //    app.post("user"){ req async -> Response in

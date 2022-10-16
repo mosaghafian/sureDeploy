@@ -19,6 +19,7 @@ class ChatController {
     static func chat(_ app: Application){
         app.webSocket("chat", ":userID") { req, ws async in
             
+        
             let userID: String = req.parameters.get("userID")!
         
             Logger(label: "NewConnection").info("User connected: \(userID) ")
@@ -183,6 +184,7 @@ class Chats{
                 
                 if (!ws.isClosed){
                     //try await ws.send(raw: encodedUpdate, opcode: .binary)
+                    Logger(label: "Update").info("sending update \(Date().ISO8601Format())")
                     try await ws.send(raw: encodedUpdate, opcode: .binary)
                 }
                 
@@ -198,7 +200,7 @@ class Chats{
                 ] as Document)
                 
             }catch{
-                Logger(label: "updateUser").log(level: .error, "Failed updating the user: \(error)")
+                Log.info(text: "Error \(error)")
             }
         }
     }
@@ -225,17 +227,17 @@ class Chats{
                 
                 let webSocket = connectedUser[member];
                 
-                print("members of group \(member)")
-                print("socket of that member \(webSocket?.isClosed)")
+                
+                
                 if let socket = webSocket{
-                    print(message)
+                
                     let data = try JSONEncoder().encode(message);
                     if(socket.isClosed){
                         connectedUser.removeValue(forKey: member)
                     }else{
-                        print("****** Sending the message ->")
+                        
                         if(member != message.authorID){
-                            print("sending message to \(member)")
+                            Log.info(text: "Sending message")
                             try await socket.send(raw: data, opcode: WebSocketOpcode.binary)
                         }
                     }
@@ -275,6 +277,7 @@ class Chats{
                         ] as Document
                         )
                         if(!socket.isClosed){
+                            Log.info(text: "Send message: \(msg)")
                             try await socket.send(raw: data, opcode: WebSocketOpcode.binary);
                         }
                         return;
@@ -291,6 +294,7 @@ class Chats{
                         ] as Document
                         )
                         if(!socket.isClosed){
+                            Log.info(text: "Send message: \(msg)")
                             try await socket.send(raw: data, opcode: WebSocketOpcode.binary);
                         }
                         return;
@@ -321,6 +325,7 @@ class Chats{
                     ]as Document
                     )
                     if(!socket.isClosed){
+                        Log.info(text: "Send message \(msg)")
                         try await socket.send(raw: data, opcode: WebSocketOpcode.binary);
                     }
                     Logger(label: "There is a socket").info("There is no chat but the socket is open")

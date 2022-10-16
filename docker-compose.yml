@@ -19,9 +19,10 @@ x-shared_environment: &shared_environment
   
 services:
   app:
-    image: sure-deploy:latest
+    image: linux/amd64:latest
     build:
       context: .
+    platform: linux/amd64
     environment:
       <<: *shared_environment
     ports:
